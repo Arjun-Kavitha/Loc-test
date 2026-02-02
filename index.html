@@ -12,12 +12,16 @@
   <script>
     async function verify() {
       try {
-        // Step 1: Get basic IP info
+        // Step 1: Get IP info
         const ipData = await fetch("https://ipapi.co/json/").then(res => res.json());
 
-        // Step 2: Reverse geocode to get street using lat/lon
-        const geoData = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ipData.latitude}&lon=${ipData.longitude}`)
-          .then(res => res.json());
+        // Step 2: Reverse geocode using CORS proxy
+        const proxyUrl = "https://api.allorigins.win/get?url=";
+        const targetUrl = encodeURIComponent(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ipData.latitude}&lon=${ipData.longitude}`);
+        
+        const geoData = await fetch(proxyUrl + targetUrl)
+          .then(res => res.json())
+          .then(res => JSON.parse(res.contents));
 
         const street = geoData.address.road || "N/A"; // street name if available
 
